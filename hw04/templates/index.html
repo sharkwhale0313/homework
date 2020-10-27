@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>원페이지쇼핑몰 4주차</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+          integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        function order() {
+            let name = $('#input-name').val();
+            let count = $('#input-count').val();
+            let address = $('#input-address').val();
+            let phoneNum = $('#input-phone').val();
+
+            if (!name) {
+                alert("이름을 입력하세요");
+                return;
+            } else if (count == '--수량을 선택하세요.--') {
+                alert("수량을 입력하세요.");
+                return;
+            } else if (!address) {
+                alert("주소를 입력하세요");
+                return;
+            } else if (!phoneNum) {
+                alert("전화번호를 입력하세요");
+                return;
+            }
+
+            // 전화번호 형식 체크
+            let phone = phoneNum;
+            phoneNum = phoneNum.split('-');
+            if (phoneNum.length != 3) {
+                alert("전화번호 형식은 010-0000-0000 입니다.");
+                return;
+            } else if (phoneNum[0] != '010') {
+                alert("전화번호 형식은 010-0000-0000 입니다.")
+                return;
+            } else if (phoneNum[1] * 1 < 0 || phoneNum[1] * 1 > 9999) {
+                alert("전화번호 형식은 010-0000-0000 입니다.")
+                return;
+            } else if (phoneNum[2] * 1 < 0 || phoneNum[2] * 1 > 9999) {
+                alert("전화번호 형식은 010-0000-0000 입니다.")
+                return;
+            } else {
+                alert("주문이 완료되었습니다.");
+            }
+
+            $.ajax({
+                type: "POST", // POST 방식으로 요청하겠다.
+                url: "/order", // /order라는 url에 요청하겠다.
+                data: {name_give: name, count_give: count, address_give: address, phone_give: phone}, // 데이터를 주는 방법
+                success: function (response) { // 성공하면
+                    if (response["result"] == "success") {
+                        window.location.reload();
+                    } else {
+                        alert("서버 오류!")
+                    }
+                }
+            })
+        }
+
+        $(document).ready(function () {
+            $("#orders-list").html("");
+            showOrders();
+        });
+
+        function showOrders(name, count, address, phone) {
+            $.ajax({
+                type: "GET",
+                url: "/order",
+                data: {},
+                success: function (response) {
+                    let orders = response["orders"];
+                    for (let i = 0; i < orders.length; i++) {
+                        makeOrderRow(orders[i]["name"], orders[i]["count"], orders[i]["address"], orders[i]["phone"])
+                    }
+                }
+            })
+
+            // 다음 입력을 위해 입력란 초기화
+            $('#input-name').val('');
+            $('#input-phone').val('');
+            $('#input-address').val('');
+            $('#input-count').val('--수량을 선택하세요.--');
+        }
+
+        function makeOrderRow(name,count,address,phone)
+        {
+            let tempHtml = `<tr>
+                            <td>${name}</td>
+                            <td>${count}</td>
+                            <td>${address}</td>
+                            <td>${phone}</td>
+                            </tr>`
+            $('#order-list').append(tempHtml);
+        }
+
+        // 환율표시
+        $.ajax({
+            type: "GET",
+            url: "https://api.manana.kr/exchange/rate.json",
+            data: {},
+            success: function (response) {
+                let us = response[1]['rate'];
+                console.log(us);
+                $('#exchange-rate').append(`달러-원 환율 : ${us}`);
+            }
+        })
+    </script>
+    <style>
+        * {
+            font-family: 'Noto Serif KR', serif;
+        }
+
+        .wrap {
+            margin: auto;
+            width: 380px;
+        }
+
+        img {
+            display: block;
+            margin: 0px auto;
+            width: 380px;
+            height: 250px;
+        }
+
+        .input-group-text {
+            font-size: 13px;
+        }
+
+        .input-group {
+            font-size: 13px;
+        }
+
+        .blue-text {
+            color: blue;
+            font-size: 13px;
+        }
+
+        table {
+            border: 1px;
+            border-color: white;
+            border-collapse: collapse;
+        }
+
+        td,
+        th {
+            padding: 10px;
+            border: 1px solid;
+            border-color: white;
+        }
+
+        #order-info {
+            font-weight: bold;
+            font-size: 15px;
+        }
+
+    </style>
+
+</head>
+<body>
+<hr>
+<img id="img-block" src="https://www.weeklyseoul.net/news/photo/201906/51499_22742_1933.jpg"/>
+
+<div class="wrap">
+    <!--  상품 이름,가격,설명  -->
+    <h3>별이 빛나는 밤 <span style="font-size:14px">가격:100,000원</span></h3>
+    <div style="font-size:13px">빈센트 반 고흐(1853~1890)</div>
+    <br>
+    <!--  환율  -->
+    <div class="blue-text" id="exchange-rate"></div>
+    <!--  input(이름)  -->
+    <div class="input-group mb-3">
+        <div class="input-group-prepend">
+            <span class="input-group-text" id="basic-addon1">주문자 이름</span>
+        </div>
+        <input type="text" class="form-control"
+               aria-describedby="basic-addon1" id="input-name">
+    </div>
+    <!--  input(수량)  -->
+    <div class="input-group mb-3">
+        <div class="input-group-prepend">
+            <label class="input-group-text" for="input-count">수량</label>
+        </div>
+        <select class="custom-select" id="input-count">
+            <option selected>--수량을 선택하세요.--</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+        </select>
+    </div>
+    <!--  input(주소)  -->
+    <div class="input-group mb-3">
+        <div class="input-group-prepend">
+            <span class="input-group-text">주소</span>
+        </div>
+        <input type="text" class="form-control" aria-describedby="basic-addon1" id="input-address">
+    </div>
+    <!--  input(전화번호)  -->
+    <div class="input-group mb-3">
+        <div class="input-group-prepend">
+            <span class="input-group-text">전화번호</span>
+        </div>
+        <input type="text" class="form-control" aria-describedby="basic-addon1" id="input-phone">
+    </div>
+    <!--  주문버튼(누르면 alert)  -->
+    <button onclick="order()" class="btn btn-primary" type="submit">Button</button>
+    <br><br>
+
+    <!--  주문자 리스트  -->
+    <div>
+        <div id="order-info"> - 주문자 리스트</div>
+        <table>
+            <thead>
+            <tr>
+                <td>이름</td>
+                <td>수량</td>
+                <td>주소</td>
+                <td>전화번호</td>
+            </tr>
+            </thead>
+            <tbody id="order-list">
+            </tbody>
+        </table>
+    </div>
+</div>
+
+</body>
+</html>
